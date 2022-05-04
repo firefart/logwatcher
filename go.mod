@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/hpcloud/tail v1.0.0
+	github.com/sirupsen/logrus v1.8.1
 	gopkg.in/mail.v2 v2.3.1
 )
 

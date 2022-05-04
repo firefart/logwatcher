@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/hpcloud/tail"
+	"github.com/sirupsen/logrus"
 
 	gomail "gopkg.in/mail.v2"
 )
@@ -37,6 +38,8 @@ func sendEmail(config *configuration, from, to, subject, body string) error {
 }
 
 func run() error {
+	log := logrus.New()
+
 	configFile := flag.String("config", "", "config file to use")
 	flag.Parse()
 
@@ -45,7 +48,7 @@ func run() error {
 		log.Fatalf("could not parse config file: %v", err)
 	}
 
-	t, err := tail.TailFile(config.File, tail.Config{Follow: true, ReOpen: true})
+	t, err := tail.TailFile(config.File, tail.Config{Follow: true, ReOpen: true, Logger: log})
 	if err != nil {
 		return err
 	}
