@@ -1,0 +1,15 @@
+{
+  "mailserver": "localhost",
+  "mailport": 25,
+  "mailfrom": "RSS <a@a.com>",
+  "mailto": "People <b@b.com>",
+  "mailskiptls": true,
+  "mailuser": "",
+  "mailpass": "",
+  "file": "/var/log/messages",
+  "watches": [
+    "match1",
+    "match2",
+    "match3"
+  ]
+}
