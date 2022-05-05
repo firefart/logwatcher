@@ -1,7 +1,7 @@
 {
   "mailserver": "localhost",
   "mailport": 25,
-  "mailfrom": "RSS <a@a.com>",
+  "mailfrom": "logwatcher <a@a.com>",
   "mailto": "People <b@b.com>",
   "mailskiptls": true,
   "mailuser": "",
