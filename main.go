@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/hpcloud/tail"
@@ -41,7 +42,14 @@ func run() error {
 	log := logrus.New()
 
 	configFile := flag.String("config", "", "config file to use")
+	debug := flag.Bool("debug", false, "Print debug output")
 	flag.Parse()
+
+	log.SetOutput(os.Stdout)
+	log.SetLevel(logrus.InfoLevel)
+	if *debug {
+		log.SetLevel(logrus.DebugLevel)
+	}
 
 	config, err := getConfig(*configFile)
 	if err != nil {
@@ -53,10 +61,13 @@ func run() error {
 		return err
 	}
 	for line := range t.Lines {
+		log.Debugf("got line: %s", line.Text)
 		for _, m := range config.Watches {
 			if strings.Contains(line.Text, m) {
+				log.Debugf("string %q is inside %q", m, line.Text)
 				subject := fmt.Sprintf("file %s matched string %s", config.File, m)
-				if err := sendEmail(config, "", "", subject, line.Text); err != nil {
+				log.Info("Match: %s", line.Text)
+				if err := sendEmail(config, config.Mailfrom, config.Mailto, subject, line.Text); err != nil {
 					// do not exit, continue tailing the file
 					log.Printf("[ERROR]: %v", err)
 				}
