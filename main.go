@@ -65,9 +65,8 @@ func run() error {
 		log.Debugf("got line: %s", line.Text)
 		for _, m := range config.Watches {
 			if strings.Contains(line.Text, m) {
-				log.Debugf("string %q is inside %q", m, line.Text)
+				log.Debugf("Match for %q: %s", m, line.Text)
 				subject := fmt.Sprintf("file %s matched string %s", config.File, m)
-				log.Infof("Match for %q: %s", m, line.Text)
 				if err := sendEmail(config, config.Mailfrom, config.Mailto, subject, line.Text); err != nil {
 					// do not exit, continue tailing the file
 					log.Printf("[ERROR]: %v", err)
