@@ -1,0 +1,14 @@
+[Unit]
+Description=Logwatcher
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+User=root
+SyslogIdentifier=logwatcher
+ExecStart=/opt/logwatcher/logwatcher -config /opt/logwatcher/config.json
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
