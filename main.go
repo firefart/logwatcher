@@ -69,7 +69,7 @@ func run() error {
 				subject := fmt.Sprintf("file %s matched string %s", config.File, m)
 				if err := sendEmail(config, config.Mailfrom, config.Mailto, subject, line.Text); err != nil {
 					// do not exit, continue tailing the file
-					log.Printf("[ERROR]: %v", err)
+					log.Errorf("[ERROR]: %v", err)
 				}
 			}
 		}
