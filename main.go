@@ -56,7 +56,8 @@ func run() error {
 		log.Fatalf("could not parse config file: %v", err)
 	}
 
-	t, err := tail.TailFile(config.File, tail.Config{Follow: true, ReOpen: true, Logger: log})
+	// Whence: 2 --> Start at end of file
+	t, err := tail.TailFile(config.File, tail.Config{Follow: true, ReOpen: true, Logger: log, Location: &tail.SeekInfo{Whence: 2}})
 	if err != nil {
 		return err
 	}
@@ -66,7 +67,7 @@ func run() error {
 			if strings.Contains(line.Text, m) {
 				log.Debugf("string %q is inside %q", m, line.Text)
 				subject := fmt.Sprintf("file %s matched string %s", config.File, m)
-				log.Info("Match: %s", line.Text)
+				log.Infof("Match for %q: %s", m, line.Text)
 				if err := sendEmail(config, config.Mailfrom, config.Mailto, subject, line.Text); err != nil {
 					// do not exit, continue tailing the file
 					log.Printf("[ERROR]: %v", err)
