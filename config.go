@@ -8,15 +8,30 @@ import (
 )
 
 type configuration struct {
-	Mailserver  string   `json:"mailserver"`
-	Mailport    int      `json:"mailport"`
-	Mailfrom    string   `json:"mailfrom"`
-	Mailto      string   `json:"mailto"`
-	Mailuser    string   `json:"mailuser"`
-	Mailpass    string   `json:"mailpass"`
-	MailSkipTLS bool     `json:"mailskiptls"`
-	File        string   `json:"file"`
-	Watches     []string `json:"watches"`
+	Mail struct {
+		Server string `json:"server"`
+		Port   int    `json:"port"`
+		From   struct {
+			Name string `json:"name"`
+			Mail string `json:"mail"`
+		} `json:"from"`
+		To       []string `json:"to"`
+		User     string   `json:"user"`
+		Password string   `json:"password"`
+		SkipTLS  bool     `json:"skiptls"`
+	} `json:"mail"`
+	FileWatches    []fileWatch    `json:"files"`
+	SystemdWatches []systemdWatch `json:"systemd"`
+}
+
+type fileWatch struct {
+	File    string   `json:"file"`
+	Strings []string `json:"strings"`
+}
+
+type systemdWatch struct {
+	UnitFile string   `json:"unitfile"`
+	Strings  []string `json:"strings"`
 }
 
 func getConfig(f string) (*configuration, error) {
