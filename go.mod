@@ -10,7 +10,7 @@ require (
 
 require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
-	golang.org/x/sys v0.0.0-20220721230656-c6bc011c0c49 // indirect
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
