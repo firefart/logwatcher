@@ -14,11 +14,6 @@ import (
 	gomail "gopkg.in/mail.v2"
 )
 
-type mailQueueItem struct {
-	subject string
-	body    string
-}
-
 func main() {
 	log := logrus.New()
 	log.SetOutput(os.Stdout)
@@ -91,7 +86,6 @@ func run(log *logrus.Logger) error {
 				log.Debugf("Match for %q: %s", m, line.Text)
 				subject := fmt.Sprintf("file %s matched string %s", config.File, m)
 				// async email sending
-
 				go func(subj, body string) {
 					if err := sendEmailLoop(log, config, subj, body); err != nil {
 						log.Errorf("[ERROR]: %v", err)
