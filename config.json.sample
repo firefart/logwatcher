@@ -11,8 +11,8 @@
     "user": "",
     "password": "",
     "retries": 5,
-    "sleep": "1s",
-  }
+    "sleep": "1s"
+  },
   "file": "/var/log/messages",
   "watches": [
     "match1",
