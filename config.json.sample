@@ -1,11 +1,18 @@
 {
-  "mailserver": "localhost",
-  "mailport": 25,
-  "mailfrom": "logwatcher <a@a.com>",
-  "mailto": "People <b@b.com>",
-  "mailskiptls": true,
-  "mailuser": "",
-  "mailpass": "",
+  "mail": {
+    "server": "localhost",
+    "port": 25,
+    "from": {
+      "name": "logwatcher",
+      "mail": "a@a.com"
+    },
+    "to": ["bbb@bbb.com", "ccc@ccc.com"],
+    "skiptls": true,
+    "user": "",
+    "pass": "",
+    "retries": 5,
+    "sleep": "1s",
+  }
   "file": "/var/log/messages",
   "watches": [
     "match1",
