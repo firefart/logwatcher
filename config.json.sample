@@ -9,7 +9,7 @@
     "to": ["bbb@bbb.com", "ccc@ccc.com"],
     "skiptls": true,
     "user": "",
-    "pass": "",
+    "password": "",
     "retries": 5,
     "sleep": "1s",
   }
