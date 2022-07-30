@@ -9,9 +9,10 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/hpcloud/tail"
+	"github.com/nxadm/tail"
 	"github.com/sirupsen/logrus"
 
 	gomail "gopkg.in/mail.v2"
@@ -100,7 +101,7 @@ func run(ctx context.Context, log *logrus.Logger) error {
 
 	config, err := getConfig(*configFile)
 	if err != nil {
-		log.Fatalf("could not parse config file: %v", err)
+		return fmt.Errorf("could not parse config file: %w", err)
 	}
 
 	app := app{
@@ -113,9 +114,13 @@ func run(ctx context.Context, log *logrus.Logger) error {
 		app.mailer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
-	mailChan := make(chan (mailQueueItem), 10)
+	mailChan := make(chan mailQueueItem, 10)
+	errorChan := make(chan error, 10)
+	var wg sync.WaitGroup
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case mail, ok := <-mailChan:
@@ -132,10 +137,53 @@ func run(ctx context.Context, log *logrus.Logger) error {
 		}
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case err, ok := <-errorChan:
+				if !ok {
+					// channel closed, break out
+					return
+				}
+				if !errors.Is(err, context.Canceled) {
+					log.Errorf("[ERROR] %v", err)
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	var filesWg sync.WaitGroup
+	for _, fileConfig := range config.Files {
+		filesWg.Add(1)
+		go func(f file) {
+			defer filesWg.Done()
+			tailFile(ctx, f, log, mailChan, errorChan)
+		}(fileConfig)
+	}
+	// wait for tails to finish
+	filesWg.Wait()
+	// once all tails are finished close the channels
+	// this path should only be reached if the tails
+	// error out. on ctrl+c all goroutines are cancelled
+	// so the last errors are not logged
+	close(mailChan)
+	close(errorChan)
+	// wait for main waitgroup
+	wg.Wait()
+
+	return nil
+}
+
+func tailFile(ctx context.Context, file file, log *logrus.Logger, mailChan chan<- mailQueueItem, errorChan chan<- error) {
 	// Whence: 2 --> Start at end of file
-	t, err := tail.TailFile(config.File, tail.Config{Follow: true, ReOpen: true, Logger: log, Location: &tail.SeekInfo{Whence: 2}})
+	t, err := tail.TailFile(file.FileName, tail.Config{Follow: true, ReOpen: true, Logger: log, Location: &tail.SeekInfo{Whence: 2}})
 	if err != nil {
-		return err
+		errorChan <- err
+		return
 	}
 
 	for {
@@ -143,14 +191,14 @@ func run(ctx context.Context, log *logrus.Logger) error {
 		case line, ok := <-t.Lines:
 			if !ok {
 				// channel closed, break out
-				return nil
+				return
 			}
 
-			log.Debugf("got line: %s", line.Text)
-			for _, m := range config.Watches {
+			log.Debugf("%s: got line: %s", file.FileName, line.Text)
+			for _, m := range file.Watches {
 				if strings.Contains(line.Text, m) {
-					log.Debugf("Match for %q: %s", m, line.Text)
-					subject := fmt.Sprintf("file %s matched string %s", config.File, m)
+					log.Debugf("%s: match for %q: %s", file.FileName, m, line.Text)
+					subject := fmt.Sprintf("file %s matched string %s", file.FileName, m)
 					mailChan <- mailQueueItem{
 						subject: subject,
 						body:    line.Text,
@@ -158,7 +206,8 @@ func run(ctx context.Context, log *logrus.Logger) error {
 				}
 			}
 		case <-ctx.Done():
-			return ctx.Err()
+			errorChan <- ctx.Err()
+			return
 		}
 	}
 }

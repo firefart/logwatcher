@@ -54,9 +54,13 @@ type mailConfig struct {
 }
 
 type configuration struct {
-	Mail    mailConfig `json:"mail"`
-	File    string     `json:"file"`
-	Watches []string   `json:"watches"`
+	Mail  mailConfig `json:"mail"`
+	Files []file     `json:"files"`
+}
+
+type file struct {
+	FileName string   `json:"filename"`
+	Watches  []string `json:"watches"`
 }
 
 func getConfig(f string) (*configuration, error) {

@@ -13,10 +13,21 @@
     "retries": 5,
     "sleep": "1s"
   },
-  "file": "/var/log/messages",
-  "watches": [
-    "match1",
-    "match2",
-    "match3"
+  "files": [{
+      "filename": "/var/log/messages",
+      "watches": [
+        "match1",
+        "match2",
+        "match3"
+      ]
+    },
+    {
+      "filename": "/var/log/mail.log",
+      "watches": [
+        "match1",
+        "match2",
+        "match3"
+      ]
+    }
   ]
 }
