@@ -11,6 +11,8 @@ To install the systemd service you can use the `install_service.sh` helper scrip
 
 See `config.json.exampe` for an example config and adopt it to your needs.
 
+For mailing you can use [Mailjet](https://www.mailjet.com/) which gives you 200 free mails per day currently.
+
 ## usage
 
 `logwatcher -config config.json`
