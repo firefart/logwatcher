@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/nxadm/tail v1.4.8
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.1
 	gopkg.in/mail.v2 v2.3.1
 )
 
