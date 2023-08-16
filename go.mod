@@ -1,6 +1,6 @@
 module github.com/firefart/logwatcher
 
-go 1.18
+go 1.21
 
 require (
 	github.com/nxadm/tail v1.4.8
