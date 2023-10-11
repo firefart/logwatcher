@@ -3,7 +3,7 @@ module github.com/firefart/logwatcher
 go 1.21
 
 require (
-	github.com/nxadm/tail v1.4.8
+	github.com/nxadm/tail v1.4.11
 	github.com/sirupsen/logrus v1.9.3
 	gopkg.in/mail.v2 v2.3.1
 )
