@@ -27,6 +27,10 @@
         "match1",
         "match2",
         "match3"
+      ],
+      "excludes": [
+        "exclude1",
+        "exclude2"
       ]
     }
   ]

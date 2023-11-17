@@ -61,6 +61,7 @@ type configuration struct {
 type file struct {
 	FileName string   `json:"filename"`
 	Watches  []string `json:"watches"`
+	Excludes []string `json:"excludes"`
 }
 
 func getConfig(f string) (*configuration, error) {

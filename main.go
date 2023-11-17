@@ -178,6 +178,15 @@ func run(ctx context.Context, log *logrus.Logger) error {
 	return nil
 }
 
+func lineIsExcluded(file file, line string) bool {
+	for _, exclude := range file.Excludes {
+		if strings.Contains(line, exclude) {
+			return true
+		}
+	}
+	return false
+}
+
 func tailFile(ctx context.Context, file file, log *logrus.Logger, mailChan chan<- mailQueueItem, errorChan chan<- error) {
 	// Whence: 2 --> Start at end of file
 	t, err := tail.TailFile(file.FileName, tail.Config{Follow: true, ReOpen: true, Logger: log, Location: &tail.SeekInfo{Whence: 2}})
@@ -195,10 +204,14 @@ func tailFile(ctx context.Context, file file, log *logrus.Logger, mailChan chan<
 			}
 
 			log.Debugf("%s: got line: %s", file.FileName, line.Text)
-			for _, m := range file.Watches {
-				if strings.Contains(line.Text, m) {
-					log.Debugf("%s: match for %q: %s", file.FileName, m, line.Text)
-					subject := fmt.Sprintf("file %s matched string %s", file.FileName, m)
+			for _, watchString := range file.Watches {
+				if !strings.Contains(line.Text, watchString) {
+					continue
+				}
+				// check for excludes
+				if !lineIsExcluded(file, line.Text) {
+					log.Debugf("%s: match for %q: %s", file.FileName, watchString, line.Text)
+					subject := fmt.Sprintf("file %s matched string %s", file.FileName, watchString)
 					mailChan <- mailQueueItem{
 						subject: subject,
 						body:    line.Text,
