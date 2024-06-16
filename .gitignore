@@ -2,3 +2,5 @@ logwatcher
 *.exe
 *.json
 /.vscode
+
+dist/
