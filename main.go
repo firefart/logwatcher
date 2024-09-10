@@ -76,7 +76,9 @@ func (a *app) sendEmail(ctx context.Context, subject, body string) error {
 	if err := m.FromFormat(a.config.Mail.From.Name, a.config.Mail.From.Mail); err != nil {
 		return err
 	}
-	m.To(a.config.Mail.To...)
+	if err := m.To(a.config.Mail.To...); err != nil {
+		return err
+	}
 	m.Subject(subject)
 	m.SetBodyString(mail.TypeTextPlain, body)
 
