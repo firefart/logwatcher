@@ -8,6 +8,8 @@
     },
     "to": ["bbb@bbb.com", "ccc@ccc.com"],
     "skiptls": true,
+    "tls": false,
+    "starttls": true,
     "user": "",
     "password": "",
     "retries": 5,

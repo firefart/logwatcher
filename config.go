@@ -49,6 +49,7 @@ type mailConfig struct {
 	User     string        `json:"user"`
 	Password string        `json:"password"`
 	TLS      bool          `json:"tls"`
+	StartTLS bool          `json:"starttls"`
 	SkipTLS  bool          `json:"skiptls"`
 	Retries  int           `json:"retries"`
 	Sleep    duration      `json:"sleep"`

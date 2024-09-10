@@ -117,8 +117,14 @@ func run(ctx context.Context, log *logrus.Logger) error {
 			InsecureSkipVerify: true,
 		}))
 	}
+
+	// use either tls, starttls, or starttls with fallback to plaintext
 	if config.Mail.TLS {
 		options = append(options, gomail.WithSSL())
+	} else if config.Mail.StartTLS {
+		options = append(options, gomail.WithTLSPortPolicy(gomail.TLSMandatory))
+	} else {
+		options = append(options, gomail.WithTLSPortPolicy(gomail.TLSOpportunistic))
 	}
 
 	mailer, err := gomail.NewClient(config.Mail.Server, options...)
