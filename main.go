@@ -15,13 +15,14 @@ import (
 	"github.com/nxadm/tail"
 	"github.com/sirupsen/logrus"
 
-	gomail "gopkg.in/mail.v2"
+	"github.com/wneessen/go-mail"
+	gomail "github.com/wneessen/go-mail"
 )
 
 type app struct {
 	log    *logrus.Logger
 	config *configuration
-	mailer *gomail.Dialer
+	mailer *gomail.Client
 }
 
 type mailQueueItem struct {
@@ -34,32 +35,21 @@ func main() {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(logrus.InfoLevel)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	defer func() {
-		signal.Stop(c)
-		cancel()
-	}()
-	go func() {
-		select {
-		case <-c:
-			// received ctrl+c
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 
 	if err := run(ctx, log); err != nil {
 		if !errors.Is(err, context.Canceled) {
-			log.Fatalf("[ERROR] %v", err)
+			log.Errorf("[ERROR] %v", err)
+			cancel()
+			os.Exit(-1)
 		}
 	}
 }
 
-func (a *app) sendEmailLoop(subject, body string) error {
+func (a *app) sendEmailLoop(ctx context.Context, subject, body string) error {
 	for i := 0; i < a.config.Mail.Retries; i++ {
-		err := a.sendEmail(subject, body)
+		err := a.sendEmail(ctx, subject, body)
 		if err == nil {
 			// email sent successfully, bail out
 			return nil
@@ -67,7 +57,12 @@ func (a *app) sendEmailLoop(subject, body string) error {
 
 		if i < a.config.Mail.Retries-1 {
 			a.log.Errorf("[ERROR]: %v retrying again after %s", err, a.config.Mail.Sleep.Duration)
-			time.Sleep(a.config.Mail.Sleep.Duration)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(a.config.Mail.Sleep.Duration):
+				break
+			}
 		} else {
 			return fmt.Errorf("could not send email after %d retries: %w", a.config.Mail.Retries, err)
 		}
@@ -75,15 +70,17 @@ func (a *app) sendEmailLoop(subject, body string) error {
 	return fmt.Errorf("should never reach here")
 }
 
-func (a *app) sendEmail(subject, body string) error {
+func (a *app) sendEmail(ctx context.Context, subject, body string) error {
 	a.log.Debug("sending mail")
-	m := gomail.NewMessage()
-	m.SetAddressHeader("From", a.config.Mail.From.Mail, a.config.Mail.From.Name)
-	m.SetHeader("To", a.config.Mail.To...)
-	m.SetHeader("Subject", subject)
-	m.SetBody("text/plain", body)
+	m := gomail.NewMsg()
+	if err := m.FromFormat(a.config.Mail.From.Name, a.config.Mail.From.Mail); err != nil {
+		return err
+	}
+	m.To(a.config.Mail.To...)
+	m.Subject(subject)
+	m.SetBodyString(mail.TypeTextPlain, body)
 
-	if err := a.mailer.DialAndSend(m); err != nil {
+	if err := a.mailer.DialAndSendWithContext(ctx, m); err != nil {
 		return err
 	}
 	return nil
@@ -104,14 +101,33 @@ func run(ctx context.Context, log *logrus.Logger) error {
 		return fmt.Errorf("could not parse config file: %w", err)
 	}
 
+	var options []gomail.Option
+
+	options = append(options, gomail.WithTimeout(config.Mail.Timeout))
+	options = append(options, gomail.WithPort(config.Mail.Port))
+	if config.Mail.User != "" && config.Mail.Password != "" {
+		options = append(options, gomail.WithSMTPAuth(gomail.SMTPAuthPlain))
+		options = append(options, gomail.WithUsername(config.Mail.User))
+		options = append(options, gomail.WithUsername(config.Mail.Password))
+	}
+	if config.Mail.SkipTLS {
+		options = append(options, gomail.WithTLSConfig(&tls.Config{
+			InsecureSkipVerify: true,
+		}))
+	}
+	if config.Mail.TLS {
+		options = append(options, gomail.WithSSL())
+	}
+
+	mailer, err := gomail.NewClient(config.Mail.Server, options...)
+	if err != nil {
+		return fmt.Errorf("could not create mail client: %w", err)
+	}
+
 	app := app{
 		log:    log,
 		config: config,
-		mailer: gomail.NewDialer(config.Mail.Server, config.Mail.Port, config.Mail.User, config.Mail.Password),
-	}
-
-	if config.Mail.SkipTLS {
-		app.mailer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+		mailer: mailer,
 	}
 
 	mailChan := make(chan mailQueueItem, 10)
@@ -128,7 +144,7 @@ func run(ctx context.Context, log *logrus.Logger) error {
 					// channel closed, break out
 					return
 				}
-				if err := app.sendEmailLoop(mail.subject, mail.body); err != nil {
+				if err := app.sendEmailLoop(ctx, mail.subject, mail.body); err != nil {
 					log.Errorf("[ERROR]: %v", err)
 				}
 			case <-ctx.Done():

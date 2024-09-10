@@ -45,12 +45,14 @@ type mailConfig struct {
 		Name string `json:"name"`
 		Mail string `json:"mail"`
 	} `json:"from"`
-	To       []string `json:"to"`
-	User     string   `json:"user"`
-	Password string   `json:"password"`
-	SkipTLS  bool     `json:"skiptls"`
-	Retries  int      `json:"retries"`
-	Sleep    duration `json:"sleep"`
+	To       []string      `json:"to"`
+	User     string        `json:"user"`
+	Password string        `json:"password"`
+	TLS      bool          `json:"tls"`
+	SkipTLS  bool          `json:"skiptls"`
+	Retries  int           `json:"retries"`
+	Sleep    duration      `json:"sleep"`
+	Timeout  time.Duration `json:"timeout"`
 }
 
 type configuration struct {
@@ -85,6 +87,7 @@ func getConfig(f string) (*configuration, error) {
 			Sleep: duration{
 				Duration: 1 * time.Second,
 			},
+			Timeout: 10 * time.Second,
 		},
 	}
 
