@@ -72,7 +72,7 @@ func (a *app) sendEmailLoop(ctx context.Context, subject, body string) error {
 
 func (a *app) sendEmail(ctx context.Context, subject, body string) error {
 	a.log.Debug("sending mail")
-	m := gomail.NewMsg()
+	m := gomail.NewMsg(gomail.WithNoDefaultUserAgent())
 	if err := m.FromFormat(a.config.Mail.From.Name, a.config.Mail.From.Mail); err != nil {
 		return err
 	}
