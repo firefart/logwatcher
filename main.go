@@ -110,7 +110,7 @@ func run(ctx context.Context, log *logrus.Logger) error {
 	if config.Mail.User != "" && config.Mail.Password != "" {
 		options = append(options, gomail.WithSMTPAuth(gomail.SMTPAuthPlain))
 		options = append(options, gomail.WithUsername(config.Mail.User))
-		options = append(options, gomail.WithUsername(config.Mail.Password))
+		options = append(options, gomail.WithPassword(config.Mail.Password))
 	}
 	if config.Mail.SkipTLS {
 		options = append(options, gomail.WithTLSConfig(&tls.Config{
