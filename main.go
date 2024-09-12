@@ -22,7 +22,6 @@ import (
 type app struct {
 	log    *logrus.Logger
 	config *configuration
-	mailer *gomail.Client
 }
 
 type mailQueueItem struct {
@@ -72,6 +71,10 @@ func (a *app) sendEmailLoop(ctx context.Context, subject, body string) error {
 
 func (a *app) sendEmail(ctx context.Context, subject, body string) error {
 	a.log.Debug("sending mail")
+	mailer, err := a.newMailClient()
+	if err != nil {
+		return err
+	}
 	m := gomail.NewMsg(gomail.WithNoDefaultUserAgent())
 	if err := m.FromFormat(a.config.Mail.From.Name, a.config.Mail.From.Mail); err != nil {
 		return err
@@ -82,10 +85,46 @@ func (a *app) sendEmail(ctx context.Context, subject, body string) error {
 	m.Subject(subject)
 	m.SetBodyString(mail.TypeTextPlain, body)
 
-	if err := a.mailer.DialAndSendWithContext(ctx, m); err != nil {
+	if err := mailer.DialAndSendWithContext(ctx, m); err != nil {
 		return err
 	}
 	return nil
+}
+
+// gomail.Client is NOT threadsafe
+// https://github.com/wneessen/go-mail/discussions/268
+// so we need to create a new client each time :/
+func (a *app) newMailClient() (*gomail.Client, error) {
+	var options []gomail.Option
+
+	options = append(options, gomail.WithTimeout(a.config.Mail.Timeout))
+	options = append(options, gomail.WithPort(a.config.Mail.Port))
+	if a.config.Mail.User != "" && a.config.Mail.Password != "" {
+		options = append(options, gomail.WithSMTPAuth(gomail.SMTPAuthPlain))
+		options = append(options, gomail.WithUsername(a.config.Mail.User))
+		options = append(options, gomail.WithPassword(a.config.Mail.Password))
+	}
+	if a.config.Mail.SkipTLS {
+		options = append(options, gomail.WithTLSConfig(&tls.Config{
+			InsecureSkipVerify: true,
+		}))
+	}
+
+	// use either tls, starttls, or starttls with fallback to plaintext
+	if a.config.Mail.TLS {
+		options = append(options, gomail.WithSSL())
+	} else if a.config.Mail.StartTLS {
+		options = append(options, gomail.WithTLSPortPolicy(gomail.TLSMandatory))
+	} else {
+		options = append(options, gomail.WithTLSPortPolicy(gomail.TLSOpportunistic))
+	}
+
+	mailer, err := gomail.NewClient(a.config.Mail.Server, options...)
+	if err != nil {
+		return nil, fmt.Errorf("could not create mail client: %w", err)
+	}
+
+	return mailer, nil
 }
 
 func run(ctx context.Context, log *logrus.Logger) error {
@@ -103,39 +142,9 @@ func run(ctx context.Context, log *logrus.Logger) error {
 		return fmt.Errorf("could not parse config file: %w", err)
 	}
 
-	var options []gomail.Option
-
-	options = append(options, gomail.WithTimeout(config.Mail.Timeout))
-	options = append(options, gomail.WithPort(config.Mail.Port))
-	if config.Mail.User != "" && config.Mail.Password != "" {
-		options = append(options, gomail.WithSMTPAuth(gomail.SMTPAuthPlain))
-		options = append(options, gomail.WithUsername(config.Mail.User))
-		options = append(options, gomail.WithPassword(config.Mail.Password))
-	}
-	if config.Mail.SkipTLS {
-		options = append(options, gomail.WithTLSConfig(&tls.Config{
-			InsecureSkipVerify: true,
-		}))
-	}
-
-	// use either tls, starttls, or starttls with fallback to plaintext
-	if config.Mail.TLS {
-		options = append(options, gomail.WithSSL())
-	} else if config.Mail.StartTLS {
-		options = append(options, gomail.WithTLSPortPolicy(gomail.TLSMandatory))
-	} else {
-		options = append(options, gomail.WithTLSPortPolicy(gomail.TLSOpportunistic))
-	}
-
-	mailer, err := gomail.NewClient(config.Mail.Server, options...)
-	if err != nil {
-		return fmt.Errorf("could not create mail client: %w", err)
-	}
-
 	app := app{
 		log:    log,
 		config: config,
-		mailer: mailer,
 	}
 
 	mailChan := make(chan mailQueueItem, 10)
