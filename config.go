@@ -67,14 +67,14 @@ type file struct {
 	Excludes []string `json:"excludes"`
 }
 
-func getConfig(f string) (*configuration, error) {
+func getConfig(f string) (configuration, error) {
 	if f == "" {
-		return nil, fmt.Errorf("please provide a valid config file")
+		return configuration{}, fmt.Errorf("please provide a valid config file")
 	}
 
 	b, err := os.ReadFile(f) // nolint: gosec
 	if err != nil {
-		return nil, err
+		return configuration{}, err
 	}
 	reader := bytes.NewReader(b)
 
@@ -93,7 +93,7 @@ func getConfig(f string) (*configuration, error) {
 	}
 
 	if err = decoder.Decode(&c); err != nil {
-		return nil, err
+		return configuration{}, err
 	}
-	return &c, nil
+	return c, nil
 }
