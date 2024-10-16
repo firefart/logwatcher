@@ -5,7 +5,7 @@ go 1.23
 require (
 	github.com/nxadm/tail v1.4.11
 	github.com/sirupsen/logrus v1.9.3
-	github.com/wneessen/go-mail v0.5.0
+	github.com/wneessen/go-mail v0.5.1
 )
 
 require (
