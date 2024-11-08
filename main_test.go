@@ -24,7 +24,7 @@ func TestLineIsExcluded(t *testing.T) {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.line, func(t *testing.T) {
 			t.Parallel()
-			f := file{
+			f := configFile{
 				FileName: "asdf.txt",
 				Excludes: tt.excludes,
 			}

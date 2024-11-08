@@ -1,6 +1,7 @@
 logwatcher
 *.exe
 *.json
+!*.sample.json
 /.vscode
 
 dist/

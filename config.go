@@ -1,99 +1,105 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
-	"time"
+	"github.com/hashicorp/go-multierror"
+	"github.com/knadh/koanf/parsers/json"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/structs"
+	"github.com/knadh/koanf/v2"
+
+	"github.com/go-playground/validator/v10"
 )
 
-type duration struct {
-	time.Duration
-}
-
-func (d duration) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.String())
-}
-
-func (d *duration) UnmarshalJSON(b []byte) error {
-	var v interface{}
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	switch value := v.(type) {
-	case float64:
-		d.Duration = time.Duration(value)
-		return nil
-	case string:
-		var err error
-		d.Duration, err = time.ParseDuration(value)
-		if err != nil {
-			return err
-		}
-		return nil
-	default:
-		return errors.New("invalid duration")
-	}
-}
-
-type mailConfig struct {
-	Server string `json:"server"`
-	Port   int    `json:"port"`
-	From   struct {
-		Name string `json:"name"`
-		Mail string `json:"mail"`
-	} `json:"from"`
-	To       []string      `json:"to"`
-	User     string        `json:"user"`
-	Password string        `json:"password"`
-	TLS      bool          `json:"tls"`
-	StartTLS bool          `json:"starttls"`
-	SkipTLS  bool          `json:"skiptls"`
-	Retries  int           `json:"retries"`
-	Sleep    duration      `json:"sleep"`
-	Timeout  time.Duration `json:"timeout"`
-}
-
 type configuration struct {
-	Mail  mailConfig `json:"mail"`
-	Files []file     `json:"files"`
+	Files         []configFile       `koanf:"files" validate:"dive"`
+	Notifications configNotification `koanf:"notifications"`
 }
 
-type file struct {
-	FileName string   `json:"filename"`
-	Watches  []string `json:"watches"`
-	Excludes []string `json:"excludes"`
+type configFile struct {
+	FileName string   `koanf:"filename" validate:"required,file"`
+	Watches  []string `koanf:"watches" validate:"dive,required"`
+	Excludes []string `koanf:"excludes"`
 }
+
+type configNotification struct {
+	Telegram configNotificationTelegram `koanf:"telegram"`
+	Discord  configNotificationDiscord  `koanf:"discord"`
+	Email    configNotificationEmail    `koanf:"email"`
+	SendGrid configNotificationSendGrid `koanf:"sendgrid"`
+	MSTeams  configNotificationMSTeams  `koanf:"msteams"`
+}
+
+type configNotificationTelegram struct {
+	Enabled  bool    `koanf:"enabled"`
+	APIToken string  `koanf:"api_token"`
+	ChatIDs  []int64 `koanf:"chat_ids"`
+}
+
+type configNotificationDiscord struct {
+	Enabled    bool     `koanf:"enabled"`
+	BotToken   string   `koanf:"bot_token"`
+	OAuthToken string   `koanf:"oauth_token"`
+	ChannelIDs []string `koanf:"channel_ids"`
+}
+
+type configNotificationEmail struct {
+	Enabled    bool     `koanf:"enabled"`
+	Sender     string   `koanf:"sender"`
+	Server     string   `koanf:"server"`
+	Port       int      `koanf:"port"`
+	Username   string   `koanf:"username"`
+	Password   string   `koanf:"password"`
+	Recipients []string `koanf:"recipients"`
+}
+
+type configNotificationSendGrid struct {
+	Enabled       bool     `koanf:"enabled"`
+	APIKey        string   `koanf:"api_key"`
+	SenderAddress string   `koanf:"sender_address"`
+	SenderName    string   `koanf:"sender_name"`
+	Recipients    []string `koanf:"recipients"`
+}
+
+type configNotificationMSTeams struct {
+	Enabled  bool     `koanf:"enabled"`
+	Webhooks []string `koanf:"webhooks"`
+}
+
+var defaultConfig = configuration{}
 
 func getConfig(f string) (configuration, error) {
-	if f == "" {
-		return configuration{}, fmt.Errorf("please provide a valid config file")
-	}
+	validate := validator.New(validator.WithRequiredStructEnabled())
 
-	b, err := os.ReadFile(f) // nolint: gosec
-	if err != nil {
+	k := koanf.NewWithConf(koanf.Conf{
+		Delim: ".",
+	})
+
+	if err := k.Load(structs.Provider(defaultConfig, "koanf"), nil); err != nil {
 		return configuration{}, err
 	}
-	reader := bytes.NewReader(b)
 
-	decoder := json.NewDecoder(reader)
-	decoder.DisallowUnknownFields()
-
-	// set some defaults
-	c := configuration{
-		Mail: mailConfig{
-			Retries: 3,
-			Sleep: duration{
-				Duration: 1 * time.Second,
-			},
-			Timeout: 10 * time.Second,
-		},
-	}
-
-	if err = decoder.Decode(&c); err != nil {
+	if err := k.Load(file.Provider(f), json.Parser()); err != nil {
 		return configuration{}, err
 	}
-	return c, nil
+
+	var config configuration
+	if err := k.Unmarshal("", &config); err != nil {
+		return configuration{}, err
+	}
+
+	if err := validate.Struct(config); err != nil {
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
+			return configuration{}, err
+		}
+
+		var resultErr error
+		for _, err := range err.(validator.ValidationErrors) {
+			resultErr = multierror.Append(resultErr, err)
+		}
+		return configuration{}, resultErr
+	}
+
+	return config, nil
 }

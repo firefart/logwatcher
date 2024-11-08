@@ -1,0 +1,72 @@
+{
+  "files": [
+    {
+      "filename": "/var/log/messages",
+      "watches": [
+        "match1",
+        "match2",
+        "match3"
+      ]
+    },
+    {
+      "filename": "/var/log/mail.log",
+      "watches": [
+        "match1",
+        "match2",
+        "match3"
+      ],
+      "excludes": [
+        "exclude1",
+        "exclude2"
+      ]
+    }
+  ],
+  "notifications": {
+    "telegram": {
+      "enabled": true,
+      "api_token": "token",
+      "chat_ids": [
+        1,
+        2
+      ]
+    },
+    "discord": {
+      "enabled": true,
+      "bot_token": "token",
+      "oauth_token": "token",
+      "channel_ids": [
+        "1",
+        "2"
+      ]
+    },
+    "email": {
+      "enabled": true,
+      "sender": "test@test.com",
+      "server": "smtp.server.com",
+      "port": 25,
+      "username": "user",
+      "password": "pass",
+      "recipients": [
+        "test@test.com",
+        "a@a.com"
+      ]
+    },
+    "sendgrid": {
+      "enabled": true,
+      "api_key": "apikey",
+      "sender_address": "test@test.com",
+      "sender_name": "Test",
+      "recipients": [
+        "test@test.com",
+        "a@a.com"
+      ]
+    },
+    "msteams": {
+      "enabled": true,
+      "webhooks": [
+        "url1",
+        "url2"
+      ]
+    }
+  }
+}

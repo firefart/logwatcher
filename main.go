@@ -2,144 +2,123 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
+	"github.com/nikoksr/notify"
+	"github.com/nxadm/tail"
+	"log/slog"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 	"sync"
-	"time"
-
-	"github.com/nxadm/tail"
-	"github.com/sirupsen/logrus"
-
-	"github.com/wneessen/go-mail"
-	gomail "github.com/wneessen/go-mail"
 )
 
 type app struct {
-	log    *logrus.Logger
-	mailer *gomail.Client
+	log    *slog.Logger
 	config configuration
+	notify *notify.Notify
 }
 
-type mailQueueItem struct {
+type notifyQueueItem struct {
 	subject string
 	body    string
 }
 
+type tailLogger struct {
+	log *slog.Logger
+}
+
+func (l tailLogger) Fatal(v ...interface{}) {
+	panic(fmt.Sprint(v...))
+}
+func (l tailLogger) Fatalf(format string, v ...interface{}) {
+	panic(fmt.Sprintf(format, v...))
+}
+func (l tailLogger) Fatalln(v ...interface{}) {
+	panic(fmt.Sprint(v...))
+}
+func (l tailLogger) Panic(v ...interface{}) {
+	panic(fmt.Sprintln(v...))
+}
+func (l tailLogger) Panicf(format string, v ...interface{}) {
+	panic(fmt.Sprintf(format, v...))
+}
+func (l tailLogger) Panicln(v ...interface{}) {
+	panic(fmt.Sprintln(v...))
+}
+func (l tailLogger) Print(v ...interface{}) {
+	l.log.Info(fmt.Sprint(v...))
+}
+func (l tailLogger) Printf(format string, v ...interface{}) {
+	l.log.Info(fmt.Sprintf(format, v...))
+}
+func (l tailLogger) Println(v ...interface{}) {
+	l.log.Info(fmt.Sprint(v...))
+}
+
 func main() {
-	log := logrus.New()
-	log.SetOutput(os.Stdout)
-	log.SetLevel(logrus.InfoLevel)
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	if err := run(ctx, log); err != nil {
-		if !errors.Is(err, context.Canceled) {
-			log.Errorf("[ERROR] %v", err)
-			cancel()
-			os.Exit(-1)
-		}
-	}
-}
-
-func (a *app) sendEmailLoop(ctx context.Context, subject, body string) error {
-	for i := 0; i < a.config.Mail.Retries; i++ {
-		err := a.sendEmail(ctx, subject, body)
-		if err == nil {
-			// email sent successfully, bail out
-			return nil
-		}
-
-		if i < a.config.Mail.Retries-1 {
-			a.log.Errorf("[ERROR]: %v retrying again after %s", err, a.config.Mail.Sleep.Duration)
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(a.config.Mail.Sleep.Duration):
-				break
-			}
-		} else {
-			return fmt.Errorf("could not send email after %d retries: %w", a.config.Mail.Retries, err)
-		}
-	}
-	return fmt.Errorf("should never reach here")
-}
-
-func (a *app) sendEmail(ctx context.Context, subject, body string) error {
-	a.log.Debug("sending mail")
-	m := gomail.NewMsg(gomail.WithNoDefaultUserAgent())
-	if err := m.FromFormat(a.config.Mail.From.Name, a.config.Mail.From.Mail); err != nil {
-		return err
-	}
-	if err := m.To(a.config.Mail.To...); err != nil {
-		return err
-	}
-	m.Subject(subject)
-	m.SetBodyString(mail.TypeTextPlain, body)
-
-	if err := a.mailer.DialAndSendWithContext(ctx, m); err != nil {
-		return err
-	}
-	return nil
-}
-
-// gomail.Client is NOT threadsafe
-// https://github.com/wneessen/go-mail/discussions/268
-// so we need to create a new client each time :/
-func newMailClient(config configuration) (*gomail.Client, error) {
-	var options []gomail.Option
-
-	options = append(options, gomail.WithTimeout(config.Mail.Timeout))
-	options = append(options, gomail.WithPort(config.Mail.Port))
-	if config.Mail.User != "" && config.Mail.Password != "" {
-		options = append(options, gomail.WithSMTPAuth(gomail.SMTPAuthPlain))
-		options = append(options, gomail.WithUsername(config.Mail.User))
-		options = append(options, gomail.WithPassword(config.Mail.Password))
-	}
-	if config.Mail.SkipTLS {
-		options = append(options, gomail.WithTLSConfig(&tls.Config{
-			InsecureSkipVerify: true,
-		}))
-	}
-
-	// use either tls, starttls, or starttls with fallback to plaintext
-	if config.Mail.TLS {
-		options = append(options, gomail.WithSSL())
-	} else if config.Mail.StartTLS {
-		options = append(options, gomail.WithTLSPortPolicy(gomail.TLSMandatory))
-	} else {
-		options = append(options, gomail.WithTLSPortPolicy(gomail.TLSOpportunistic))
-	}
-
-	mailer, err := gomail.NewClient(config.Mail.Server, options...)
-	if err != nil {
-		return nil, fmt.Errorf("could not create mail client: %w", err)
-	}
-
-	return mailer, nil
-}
-
-func run(ctx context.Context, log *logrus.Logger) error {
-	configFile := flag.String("config", "", "config file to use")
-	debug := flag.Bool("debug", false, "Print debug output")
+	var debugMode bool
+	var configFilename string
+	var jsonOutput bool
+	var version bool
+	var configCheckMode bool
+	flag.BoolVar(&debugMode, "debug", false, "Enable DEBUG mode")
+	flag.StringVar(&configFilename, "config", "", "config file to use")
+	flag.BoolVar(&jsonOutput, "json", false, "output in json instead")
+	flag.BoolVar(&configCheckMode, "configcheck", false, "just check the config")
+	flag.BoolVar(&version, "version", false, "show version")
 	flag.Parse()
 
-	if *debug {
-		log.SetLevel(logrus.DebugLevel)
-		log.Debug("debug logging enabled")
+	if version {
+		buildInfo, ok := debug.ReadBuildInfo()
+		if !ok {
+			fmt.Println("Unable to determine version information")
+			os.Exit(1)
+		}
+		fmt.Printf("%s", buildInfo)
+		os.Exit(0)
 	}
 
-	config, err := getConfig(*configFile)
+	logger := newLogger(debugMode, jsonOutput)
+	var err error
+	if configCheckMode {
+		err = configCheck(configFilename)
+	} else {
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer cancel()
+		err = run(ctx, logger, configFilename)
+	}
+
+	if err != nil {
+		// check if we have a multierror
+		var merr *multierror.Error
+		if errors.As(err, &merr) {
+			for _, e := range merr.Errors {
+				logger.Error(e.Error())
+			}
+			os.Exit(1)
+		}
+		// a normal error
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+}
+
+func configCheck(configFilename string) error {
+	_, err := getConfig(configFilename)
+	return err
+}
+
+func run(ctx context.Context, log *slog.Logger, configFileName string) error {
+	config, err := getConfig(configFileName)
 	if err != nil {
 		return fmt.Errorf("could not parse config file: %w", err)
 	}
 
-	mailer, err := newMailClient(config)
+	notifier, err := setupNotifications(config, log)
 	if err != nil {
 		return err
 	}
@@ -147,10 +126,10 @@ func run(ctx context.Context, log *logrus.Logger) error {
 	app := app{
 		log:    log,
 		config: config,
-		mailer: mailer,
+		notify: notifier,
 	}
 
-	mailChan := make(chan mailQueueItem, 10)
+	notifyChan := make(chan notifyQueueItem, 10)
 	errorChan := make(chan error, 10)
 	var wg sync.WaitGroup
 
@@ -159,13 +138,13 @@ func run(ctx context.Context, log *logrus.Logger) error {
 		defer wg.Done()
 		for {
 			select {
-			case mail, ok := <-mailChan:
+			case n, ok := <-notifyChan:
 				if !ok {
 					// channel closed, break out
 					return
 				}
-				if err := app.sendEmailLoop(ctx, mail.subject, mail.body); err != nil {
-					log.Errorf("[ERROR]: %v", err)
+				if err := app.notify.Send(ctx, n.subject, n.body); err != nil {
+					log.Error("error on sending notification", slog.String("err", err.Error()))
 				}
 			case <-ctx.Done():
 				return
@@ -184,7 +163,7 @@ func run(ctx context.Context, log *logrus.Logger) error {
 					return
 				}
 				if !errors.Is(err, context.Canceled) {
-					log.Errorf("[ERROR] %v", err)
+					log.Error("error on tail", slog.String("err", err.Error()))
 				}
 			case <-ctx.Done():
 				return
@@ -195,9 +174,9 @@ func run(ctx context.Context, log *logrus.Logger) error {
 	var filesWg sync.WaitGroup
 	for _, fileConfig := range config.Files {
 		filesWg.Add(1)
-		go func(f file) {
+		go func(f configFile) {
 			defer filesWg.Done()
-			tailFile(ctx, f, log, mailChan, errorChan)
+			tailFile(ctx, f, log, notifyChan, errorChan)
 		}(fileConfig)
 	}
 	// wait for tails to finish
@@ -206,7 +185,7 @@ func run(ctx context.Context, log *logrus.Logger) error {
 	// this path should only be reached if the tails
 	// error out. on ctrl+c all goroutines are cancelled
 	// so the last errors are not logged
-	close(mailChan)
+	close(notifyChan)
 	close(errorChan)
 	// wait for main waitgroup
 	wg.Wait()
@@ -214,7 +193,7 @@ func run(ctx context.Context, log *logrus.Logger) error {
 	return nil
 }
 
-func lineIsExcluded(file file, line string) bool {
+func lineIsExcluded(file configFile, line string) bool {
 	for _, exclude := range file.Excludes {
 		if strings.Contains(line, exclude) {
 			return true
@@ -223,9 +202,12 @@ func lineIsExcluded(file file, line string) bool {
 	return false
 }
 
-func tailFile(ctx context.Context, file file, log *logrus.Logger, mailChan chan<- mailQueueItem, errorChan chan<- error) {
+func tailFile(ctx context.Context, file configFile, log *slog.Logger, notifyChan chan<- notifyQueueItem, errorChan chan<- error) {
+	tailLog := tailLogger{
+		log: log,
+	}
 	// Whence: 2 --> Start at end of file
-	t, err := tail.TailFile(file.FileName, tail.Config{Follow: true, ReOpen: true, Logger: log, Location: &tail.SeekInfo{Whence: 2}})
+	t, err := tail.TailFile(file.FileName, tail.Config{Follow: true, ReOpen: true, Logger: tailLog, Location: &tail.SeekInfo{Whence: 2}})
 	if err != nil {
 		errorChan <- err
 		return
@@ -239,16 +221,16 @@ func tailFile(ctx context.Context, file file, log *logrus.Logger, mailChan chan<
 				return
 			}
 
-			log.Debugf("%s: got line: %s", file.FileName, line.Text)
+			log.Debug("got line", slog.String("filename", file.FileName), slog.String("line", line.Text))
 			for _, watchString := range file.Watches {
 				if !strings.Contains(line.Text, watchString) {
 					continue
 				}
 				// check for excludes
 				if !lineIsExcluded(file, line.Text) {
-					log.Debugf("%s: match for %q: %s", file.FileName, watchString, line.Text)
+					log.Debug("match found", slog.String("filename", file.FileName), slog.String("line", line.Text), slog.String("watch", watchString))
 					subject := fmt.Sprintf("file %s matched string %s", file.FileName, watchString)
-					mailChan <- mailQueueItem{
+					notifyChan <- notifyQueueItem{
 						subject: subject,
 						body:    line.Text,
 					}
