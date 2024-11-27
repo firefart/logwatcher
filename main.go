@@ -228,7 +228,7 @@ func tailFile(ctx context.Context, file configFile, log *slog.Logger, notifyChan
 				}
 				// check for excludes
 				if !lineIsExcluded(file, line.Text) {
-					log.Debug("match found", slog.String("filename", file.FileName), slog.String("line", line.Text), slog.String("watch", watchString))
+					log.Info("match found", slog.String("filename", file.FileName), slog.String("line", line.Text), slog.String("watch", watchString))
 					subject := fmt.Sprintf("file %s matched string %s", file.FileName, watchString)
 					notifyChan <- notifyQueueItem{
 						subject: subject,
