@@ -1,10 +1,10 @@
 # logwatcher
 
-This program watches a file for changes and sends an notification (email, sendgrid, discord, telegram and teams) when
+This program watches a file for changes and sends a notification (email, sendgrid, discord, telegram and teams) when
 one of the provided strings matches.
 
 It's basically a `tail -f file | grep match` that sends every hit per notification.
-This way you can watch an logfile for errors and get a notification to you if one occurs.
+This way you can watch a logfile for errors and get a notification to you if one occurs.
 
 ## config and installation
 
@@ -13,7 +13,7 @@ the `logwatcher.service` to the right place.
 
 See `config.json.exampe` for an example config and adopt it to your needs.
 
-For mailing you can use [Mailjet](https://www.mailjet.com/) which gives you 200 free mails per day currently.
+For mailing, you can use [Mailjet](https://www.mailjet.com/) which gives you 200 free mails per day currently.
 
 ## usage
 
