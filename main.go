@@ -129,6 +129,11 @@ func run(ctx context.Context, log *slog.Logger, configFileName string) error {
 		notify: notifier,
 	}
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		return fmt.Errorf("could not get hostname: %w", err)
+	}
+
 	notifyChan := make(chan notifyQueueItem, 10)
 	errorChan := make(chan error, 10)
 	var wg sync.WaitGroup
@@ -176,7 +181,7 @@ func run(ctx context.Context, log *slog.Logger, configFileName string) error {
 		filesWg.Add(1)
 		go func(f configFile) {
 			defer filesWg.Done()
-			tailFile(ctx, f, log, notifyChan, errorChan)
+			tailFile(ctx, f, hostname, log, notifyChan, errorChan)
 		}(fileConfig)
 	}
 	// wait for tails to finish
@@ -202,7 +207,7 @@ func lineIsExcluded(file configFile, line string) bool {
 	return false
 }
 
-func tailFile(ctx context.Context, file configFile, log *slog.Logger, notifyChan chan<- notifyQueueItem, errorChan chan<- error) {
+func tailFile(ctx context.Context, file configFile, hostname string, log *slog.Logger, notifyChan chan<- notifyQueueItem, errorChan chan<- error) {
 	tailLog := tailLogger{
 		log: log,
 	}
@@ -229,7 +234,7 @@ func tailFile(ctx context.Context, file configFile, log *slog.Logger, notifyChan
 				// check for excludes
 				if !lineIsExcluded(file, line.Text) {
 					log.Info("match found", slog.String("filename", file.FileName), slog.String("line", line.Text), slog.String("watch", watchString))
-					subject := fmt.Sprintf("file %s matched string %s", file.FileName, watchString)
+					subject := fmt.Sprintf("[%s] file %s matched string %s", hostname, file.FileName, watchString)
 					notifyChan <- notifyQueueItem{
 						subject: subject,
 						body:    line.Text,
