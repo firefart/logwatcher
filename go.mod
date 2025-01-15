@@ -11,7 +11,7 @@ require (
 	github.com/knadh/koanf/providers/structs v0.1.0
 	github.com/knadh/koanf/v2 v2.1.2
 	github.com/mattn/go-isatty v0.0.20
-	github.com/nikoksr/notify v1.1.0
+	github.com/nikoksr/notify v1.1.1
 	github.com/nxadm/tail v1.4.11
 	github.com/stretchr/testify v1.10.0
 )
@@ -21,7 +21,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bwmarrin/discordgo v0.28.1 // indirect
 	github.com/charmbracelet/lipgloss v1.0.0 // indirect
-	github.com/charmbracelet/x/ansi v0.6.0 // indirect
+	github.com/charmbracelet/x/ansi v0.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
