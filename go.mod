@@ -47,7 +47,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
-	golang.org/x/crypto v0.32.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/exp v0.0.0-20250207012021-f9890c6ad9f3 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
