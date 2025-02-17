@@ -10,7 +10,7 @@ on:
 
 jobs:
   Dockerhub:
-    timeout-minutes: 30
+    timeout-minutes: 40
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,3 +40,5 @@ jobs:
           platforms: linux/amd64,linux/arm/v7,linux/arm64/v8,linux/386,linux/ppc64le
           tags: |
             ghcr.io/firefart/logwatcher:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
