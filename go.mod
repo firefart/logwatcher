@@ -6,10 +6,10 @@ require (
 	github.com/charmbracelet/log v0.4.1
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/knadh/koanf/parsers/json v0.1.0
-	github.com/knadh/koanf/providers/file v1.1.2
-	github.com/knadh/koanf/providers/structs v0.1.0
-	github.com/knadh/koanf/v2 v2.1.2
+	github.com/knadh/koanf/parsers/json v1.0.0
+	github.com/knadh/koanf/providers/file v1.2.0
+	github.com/knadh/koanf/providers/structs v1.0.0
+	github.com/knadh/koanf/v2 v2.2.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/nikoksr/notify v1.3.0
 	github.com/nxadm/tail v1.4.11
