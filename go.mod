@@ -3,7 +3,7 @@ module github.com/firefart/logwatcher
 go 1.24
 
 require (
-	github.com/charmbracelet/log v0.4.1
+	github.com/charmbracelet/log v0.4.2
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/knadh/koanf/parsers/json v1.0.0
