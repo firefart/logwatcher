@@ -19,7 +19,7 @@ require (
 require (
 	github.com/atc0005/go-teams-notify/v2 v2.13.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/bwmarrin/discordgo v0.28.1 // indirect
+	github.com/bwmarrin/discordgo v0.29.0 // indirect
 	github.com/charmbracelet/colorprofile v0.3.1 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/x/ansi v0.9.2 // indirect
