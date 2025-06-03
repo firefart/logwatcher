@@ -1,6 +1,6 @@
 # logwatcher
 
-This program watches a file for changes and sends a notification (email, sendgrid, discord, telegram and teams) when
+This program watches a file for changes and sends a notification (email, mailgun, discord, telegram and teams) when
 one of the provided strings matches.
 
 It's basically a `tail -f file | grep match` that sends every hit per notification.

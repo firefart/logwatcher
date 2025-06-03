@@ -51,11 +51,11 @@
         "a@a.com"
       ]
     },
-    "sendgrid": {
+    "mailgun": {
       "enabled": true,
       "api_key": "apikey",
       "sender_address": "test@test.com",
-      "sender_name": "Test",
+      "domain": "test.com",
       "recipients": [
         "test@test.com",
         "a@a.com"

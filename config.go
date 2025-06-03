@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/providers/file"
@@ -26,7 +27,7 @@ type configNotification struct {
 	Telegram configNotificationTelegram `koanf:"telegram"`
 	Discord  configNotificationDiscord  `koanf:"discord"`
 	Email    configNotificationEmail    `koanf:"email"`
-	SendGrid configNotificationSendGrid `koanf:"sendgrid"`
+	Mailgun  configNotificationMailgun  `koanf:"mailgun"`
 	MSTeams  configNotificationMSTeams  `koanf:"msteams"`
 }
 
@@ -53,11 +54,11 @@ type configNotificationEmail struct {
 	Recipients []string `koanf:"recipients"`
 }
 
-type configNotificationSendGrid struct {
+type configNotificationMailgun struct {
 	Enabled       bool     `koanf:"enabled"`
 	APIKey        string   `koanf:"api_key"`
 	SenderAddress string   `koanf:"sender_address"`
-	SenderName    string   `koanf:"sender_name"`
+	Domain        string   `koanf:"domain"`
 	Recipients    []string `koanf:"recipients"`
 }
 

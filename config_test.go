@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseConfig(t *testing.T) {
@@ -78,11 +79,11 @@ func TestParseConfig(t *testing.T) {
         "a@a.com"
       ]
     },
-    "sendgrid": {
+    "mailgun": {
       "enabled": true,
       "api_key": "apikey",
       "sender_address": "test@test.com",
-      "sender_name": "Test",
+      "domain": "test.com",
       "recipients": [
         "test@test.com",
         "a@a.com"
@@ -155,12 +156,12 @@ func TestParseConfig(t *testing.T) {
 	require.Equal(t, "test@test.com", c.Notifications.Email.Recipients[0])
 	require.Equal(t, "a@a.com", c.Notifications.Email.Recipients[1])
 
-	require.Equal(t, "apikey", c.Notifications.SendGrid.APIKey)
-	require.Equal(t, "test@test.com", c.Notifications.SendGrid.SenderAddress)
-	require.Equal(t, "Test", c.Notifications.SendGrid.SenderName)
-	require.Len(t, c.Notifications.SendGrid.Recipients, 2)
-	require.Equal(t, "test@test.com", c.Notifications.SendGrid.Recipients[0])
-	require.Equal(t, "a@a.com", c.Notifications.SendGrid.Recipients[1])
+	require.Equal(t, "apikey", c.Notifications.Mailgun.APIKey)
+	require.Equal(t, "test@test.com", c.Notifications.Mailgun.SenderAddress)
+	require.Equal(t, "test.com", c.Notifications.Mailgun.Domain)
+	require.Len(t, c.Notifications.Mailgun.Recipients, 2)
+	require.Equal(t, "test@test.com", c.Notifications.Mailgun.Recipients[0])
+	require.Equal(t, "a@a.com", c.Notifications.Mailgun.Recipients[1])
 
 	require.Len(t, c.Notifications.MSTeams.Webhooks, 2)
 	require.Equal(t, "url1", c.Notifications.MSTeams.Webhooks[0])
