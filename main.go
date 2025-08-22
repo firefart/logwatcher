@@ -5,15 +5,16 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/hashicorp/go-multierror"
-	"github.com/nikoksr/notify"
-	"github.com/nxadm/tail"
 	"log/slog"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"strings"
 	"sync"
+
+	"github.com/hashicorp/go-multierror"
+	"github.com/nikoksr/notify"
+	"github.com/nxadm/tail"
 )
 
 type app struct {
@@ -138,9 +139,7 @@ func run(ctx context.Context, log *slog.Logger, configFileName string) error {
 	errorChan := make(chan error, 10)
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case n, ok := <-notifyChan:
@@ -155,11 +154,9 @@ func run(ctx context.Context, log *slog.Logger, configFileName string) error {
 				return
 			}
 		}
-	}()
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case err, ok := <-errorChan:
@@ -174,15 +171,13 @@ func run(ctx context.Context, log *slog.Logger, configFileName string) error {
 				return
 			}
 		}
-	}()
+	})
 
 	var filesWg sync.WaitGroup
 	for _, fileConfig := range config.Files {
-		filesWg.Add(1)
-		go func(f configFile) {
-			defer filesWg.Done()
-			tailFile(ctx, f, hostname, log, notifyChan, errorChan)
-		}(fileConfig)
+		filesWg.Go(func() {
+			tailFile(ctx, fileConfig, hostname, log, notifyChan, errorChan)
+		})
 	}
 	// wait for tails to finish
 	filesWg.Wait()

@@ -1,6 +1,6 @@
 module github.com/firefart/logwatcher
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/charmbracelet/log v0.4.2
