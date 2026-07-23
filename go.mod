@@ -30,7 +30,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.14 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
@@ -41,7 +41,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
-	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/leodido/go-urn v1.5.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mailgun/mailgun-go/v5 v5.17.0 // indirect
 	github.com/mattn/go-runewidth v0.0.24 // indirect
