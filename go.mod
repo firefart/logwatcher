@@ -11,7 +11,7 @@ require (
 	github.com/knadh/koanf/providers/structs v1.0.1
 	github.com/knadh/koanf/v2 v2.3.6
 	github.com/mattn/go-isatty v0.0.24
-	github.com/nikoksr/notify v1.5.0
+	github.com/nikoksr/notify v1.6.0
 	github.com/nxadm/tail v1.4.11
 	github.com/stretchr/testify v1.12.1
 )
