@@ -67,8 +67,8 @@ github.com/knadh/koanf/providers/file v1.2.1 h1:bEWbtQwYrA+W2DtdBrQWyXqJaJSG3KrP
 github.com/knadh/koanf/providers/file v1.2.1/go.mod h1:bp1PM5f83Q+TOUu10J/0ApLBd9uIzg+n9UgthfY+nRA=
 github.com/knadh/koanf/providers/structs v1.0.1 h1:2HIjxQ6n6x9cuMYSKXusWoIwmwvGXWqLGR1URXNnczs=
 github.com/knadh/koanf/providers/structs v1.0.1/go.mod h1:kjo5TFtgpaZORlpoJqcbeLowM2cINodv8kX+oFAeQ1w=
-github.com/knadh/koanf/v2 v2.3.6 h1:JoQPSJmvS4aP0xNc8xMDr5tcrkSEInL23/Il7pITAKo=
-github.com/knadh/koanf/v2 v2.3.6/go.mod h1:gRb40VRAbd4iJMYYD5IxZ6hfuopFcXBpc9bbQpZwo28=
+github.com/knadh/koanf/v2 v2.3.7 h1:amceufOeoQcq6VFKjm7/ggJ3t0Dkqaxy5fza4j3YgTA=
+github.com/knadh/koanf/v2 v2.3.7/go.mod h1:gRb40VRAbd4iJMYYD5IxZ6hfuopFcXBpc9bbQpZwo28=
 github.com/leodido/go-urn v1.5.0 h1:pLqT2kq1zpHW/1D18QMjMpdtX7cekxqtJJjg5ANyWw0=
 github.com/leodido/go-urn v1.5.0/go.mod h1:9BORnCDhdPBJNDEX+w1bJisa8yOKYi116VeO96s4ifE=
 github.com/lucasb-eyer/go-colorful v1.4.1 h1:1EO+WB73+EH8EVbzlrG3KLAfEypQWVHIBqlTf+2hNss=
